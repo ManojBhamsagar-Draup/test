@@ -22,8 +22,8 @@ import ssl
 from datetime import datetime
 
 
-uri1 = "mongodb://draupreader:fqp6hf9DzFMvLRaN@mongodb1-harvestor.draup.technology:27017/admin"
-uri2 = "mongodb://localhost:27017"
+uri1 = ""
+uri2 = ""
 
 mongo_conn1 = MongoClient(uri1, connect=False, ssl_cert_reqs=ssl.CERT_NONE)
 mongo_conn2 = MongoClient(uri2, connect=False, ssl_cert_reqs=ssl.CERT_NONE)
