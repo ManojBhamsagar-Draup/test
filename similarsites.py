@@ -2,14 +2,14 @@ from utils.gateway.data_fetch import get_data_gateway_api
 from system.logger.factory import LoggerFactory
 from system.celery import celery_app
 import json
-import re
+import tldextract
 from utils.db_ops import bulk_upsert_with_doc_update
 
 logger = LoggerFactory.create(name="SimilarSites")
 logger_context = "SimilarSitesMetaProcess"
 
 ECOSYSTEM_COMPANIES_URL = "https://gateway.draup.technology/api/iris1/v1.0/iris1_templates_data?template=Ecosystem%20Company%20Schema&page={0}&pagesize=100"
-MASTER_COMPANIES_URL = "https://gateway.draup.technology/api/iris1/v1.0/iris1_templates_data?template=master%20company%20schema&page={0}&pagesize=100"
+CONSUL_COMPANIES_URL = "https://gateway.draup.technology/api/iris1/v1.0/etl_company_data/?page_number={0}&page_size=100"
 
 
 def get_ecosystem_filtered_data(data):
@@ -27,19 +27,30 @@ def get_ecosystem_filtered_data(data):
     return filtered_data
 
 
-def get_mastercompany_filtered_data(data):
+def extract_domain_from_url(website_url):
+    """
+        extract domain name from website url
+    """
+    ext = tldextract.extract(website_url)
+    domain = ext.domain + "." + ext.suffix
+    return domain
+
+
+def get_consul_filtered_data(data):
     """
         filter data to get only required fields
     """
     if not data:
         return
     filtered_data = []
-    pattern = "(https:////)(.*)(//)"
     for doc in data:
-        website_url = doc.get("company_url", "")
-        domain = re.split(pattern=pattern, string=website_url)[2]
-        if domain:
-            filtered_data.append({"domain": domain, "website_url": website_url})
+        try:
+            website_url = doc.get("domain_url", "")
+            domain = extract_domain_from_url(website_url)
+            if domain:
+                filtered_data.append({"domain": domain, "website_url": website_url})
+        except Exception as e:
+            logger._exception_mixin(msg=f"couldn't get domain name due to: {repr(e)}", context=logger_context)
     return filtered_data
 
 
@@ -72,7 +83,7 @@ def get_ecosystem_companies():
 
     while page <= total_pages:
         data = resp.get("results", [])
-        filtered_data = get_mastercompany_filtered_data(data)
+        filtered_data = get_ecosystem_filtered_data(data)
         updated_similar_sites_meta(filtered_data)
         page += 1
         url = ECOSYSTEM_COMPANIES_URL.format(page)
@@ -80,22 +91,20 @@ def get_ecosystem_companies():
         resp = res.json()
 
 
-def get_master_companies():
-    apply_filter = {"AND":[{"attribute":"ready_for_application","condition":"equal","value":True}]}
-    payload = json.dumps(apply_filter)
+def get_consul_companies():
     page = 1
-    url = MASTER_COMPANIES_URL.format(page)
-    res = get_data_gateway_api(url, logger, job_context=logger_context, http_method="POST", payload=payload)
+    url = CONSUL_COMPANIES_URL.format(page)
+    res = get_data_gateway_api(url, logger, job_context=logger_context)
     resp = res.json()
     total_pages = resp.get("total_pages", 0)
 
     while page <= total_pages:
         data = resp.get("results", [])
-        filtered_data = get_ecosystem_filtered_data(data)
+        filtered_data = get_consul_filtered_data(data)
         updated_similar_sites_meta(filtered_data)
         page += 1
-        url = MASTER_COMPANIES_URL.format(page)
-        res = get_data_gateway_api(url, logger, job_context=logger_context, http_method="POST", payload=payload)
+        url = CONSUL_COMPANIES_URL.format(page)
+        res = get_data_gateway_api(url, logger, job_context=logger_context)
         resp = res.json()
 
 
@@ -103,11 +112,12 @@ def get_master_companies():
                  acks_late=True, queue="maintenance", expires=60 * 60 * 8)
 def similarsites_meta_process():
     get_ecosystem_companies()
-    get_master_companies()
+    get_consul_companies()
 
 
-if __name__=="__main__":
-    get_master_companies()
+if __name__ == "__main__":
+    get_consul_companies()
+
 
 
 similarsites_metadata_config = {

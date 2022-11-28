@@ -3,6 +3,9 @@ from framework.scraper_engine.types import *
 
 
 class DoximitySpecialityPostProcessor(IPostProcessor):
+    """
+        This post processor adds directory name and link in target collection.
+    """
     POST_PROCESSOR_TYPE = PostProcessorTypes.custom
 
     def process(self, *args, **kwargs):
@@ -23,6 +26,9 @@ class DoximitySpecialityPostProcessor(IPostProcessor):
 
 
 class DoximityPersonsPostProcessor(IPostProcessor):
+    """
+        This post processor used add person link and other meta inputs into the target collection.
+    """
     POST_PROCESSOR_TYPE = PostProcessorTypes.custom
 
     def process(self, *args, **kwargs):
@@ -31,7 +37,7 @@ class DoximityPersonsPostProcessor(IPostProcessor):
         speciality_name = output.data[0].get("speciality_name", "")
         directory_link = output.data[0].get("directory_link", "")
         directory_name = output.data[0].get("directory_name", "")
-        data: list = output.data[0].get("data", [])
+        data: list = output.data[0].get("data")
         self.extracted_data.data = self.process_data(data, directory_name, directory_link, speciality_name, speciality_link)
 
     @staticmethod
