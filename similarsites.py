@@ -118,7 +118,7 @@ def similarsites_meta_process():
 if __name__ == "__main__":
     get_consul_companies()
 
-
+# modify utils/gateway/data_fetch.py
 
 similarsites_metadata_config = {
     "start_date": days_ago(1),
@@ -126,8 +126,7 @@ similarsites_metadata_config = {
     "catchup": False,
     'concurrency': 1,
     'max_active_runs': 1,
-    'dagrun_timeout': 7200,
-    'render_template_as_native_obj': True
+    'dagrun_timeout': 7200
 }
 
 def similarsites_metadata_job():
