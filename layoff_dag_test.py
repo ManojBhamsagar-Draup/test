@@ -11,51 +11,65 @@ DB_MANAGER._create_connection()
 REQUEST_URL = "https://sheets.googleapis.com/v4/spreadsheets/1ffu4J_b0g2B4YLo7xvls3U2turNuS-QB2Khv5Qcrlrk/?key=AIzaSyC0P8q07pfEpXXTpPTGrVEP2fsA_sWn0-U&includeGridData=true&prettyPrint=true"
 
 
-def get_final_doc(validated_doc) -> dict:
-    if not validated_doc:
-        return {}
-    final_doc = dict()
-    for index in range(len(validated_doc)):
-        final_doc[str(index)] = validated_doc[index].get('formattedValue', None)
-    return final_doc
-
-
-def validate_row(data) -> dict:
-    if not data:
-        return {}
-    linkedin_flag = False
-    for item in data:
+def check_linkedin_column(row):
+    if not row:
+        return False, []
+    columns = []
+    for i in range(len(row)):
+        columns.append(row[i].get('formattedValue'))
+    for col in columns:
         try:
-            if "linkedin.com/in" in item.get('formattedValue', "").lower():
-                linkedin_flag = True
-                break
+            if "linked" in col.lower():
+                return True, columns
         except Exception as e:
             print(repr(e))
-    return get_final_doc(data) if linkedin_flag else {}
+            continue
+    return False, columns
 
 
-def get_sheet_data(sheet_data) -> list:
+def get_sheet_columns(rows, index):
+    column_check_length = index + 7
+
+    for check_index in range(index, column_check_length):
+        flag = False
+        columns = []
+        if check_index < len(rows):
+            row = rows[check_index].get('values')
+            flag, columns = check_linkedin_column(row)
+        if flag:
+            return check_index, columns
+    return None, []
+
+
+def get_sheet_data(sheet_data):
     start_row_index = sheet_data.get('properties', {}).get('gridProperties', {}).get('frozenRowCount', 1)
     sheet_length = len(sheet_data.get('data', [])[0].get('rowData', []))
     if sheet_length <= 0:
         return []
     rows = sheet_data.get('data', [])[0].get('rowData', [])
     sheet_data = []
-
+    new_index, columns = get_sheet_columns(rows, start_row_index - 1)
+    if not columns or start_row_index is None:
+        return sheet_data
+    start_row_index = new_index + 1
     for index in range(start_row_index, sheet_length):
-        validated_doc = dict()
-        try:
-            row = rows[index].get('values', [])
-            validated_doc = validate_row(row)
-        except Exception as e:
-            print(repr(e))
-        sheet_data.append(validated_doc) if validated_doc else False
+        row = dict()
+        temp = None
+        for i in range(len(columns)):
+            col_name = columns[i]
+            try:
+                temp = rows[index].get('values')[i].get('formattedValue')
+            except Exception as e:
+                print(repr(e))
+            if temp:
+                row[col_name] = temp
+        sheet_data.append(row) if row else False
     return sheet_data
 
 
-def get_sheets(data) -> list:
+def get_sheets(data):
     if not data.get('sheets', []):
-        return []
+        return None
     sheets_data = []
     sheets = data.get('sheets', [])
     for sheet in sheets:
@@ -81,12 +95,19 @@ def update_record(_filter, employee_list):
         logger._exception_mixin(msg=f"cannot update record {repr(e)}", context=logger_context)
 
 
+def clean_scraped_data(unclean_data):
+    for data in unclean_data:
+        if data.get(None):
+            del data[None]
+    return unclean_data
+
+
 if __name__ == '__main__':
     SOURCE_DB_NAME = "harvests"
     SOURCE_COLL_NAME = "layoff_employees"
 
     DB_MANAGER.set_collection(SOURCE_DB_NAME, SOURCE_COLL_NAME)
-    FIND_CONDITION = {"harvesting_link": {"$exists": True}}
+    FIND_CONDITION = {"employee_details": {"$exists": False}}
 
     doc_list = list(DB_MANAGER._find(FIND_CONDITION))
     count = 1
@@ -116,6 +137,7 @@ if __name__ == '__main__':
         except Exception as e:
             print("exception for url {0}".format(sheet_url))
         if scraped_data:
-            final_data = {"employees_details": scraped_data}
+            scraped_data = clean_scraped_data(scraped_data)
+            final_data = {"employee_details": scraped_data}
             _filter = {"harvesting_link": sheet_url}
             update_record(_filter, final_data)
