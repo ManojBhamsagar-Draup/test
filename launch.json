@@ -1,0 +1,72 @@
+{
+    // To debug and run puppeteer web application.
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch Program - Puppeteer slow",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}/src/index.js",
+            "outputCapture": "std",
+            "env": {
+                "IS_TEST": "false",
+                "NODE_ENV": "dev",
+                "LOG_LEVEL": "DEBUG",
+                "PROXY_URL": "http://localhost:8888",
+                "PROXY_USERNAME": "draupharv",
+                "PROXY_PASSWORD": "r3x8LDRDXbLn85tq",
+                "PUPPETEER_USERNAME": "draup_puppeteer",
+                "PUPPETEER_PASSWORD": "drauppu2pet2er15",
+                "PUPPETEER_CLUSTER_CONCURRENCY_MODEL": "CONTEXT",
+                "PUPPETEER_CLUSTER_MAX_CONCURRENCY": "1",
+                "USE_PROXY": "true",
+                "HEADLESS_MODE": "true",
+                "CLUSTER_REQUEST_TIMEOUT": "60000",
+                "MONITOR_MODE": "false",
+                "APP_PORT": "3001",
+                "METRICS_SERVER_PORT": "9109",
+                "WAIT_UNTIL_METHOD": "networkidle2",
+                "METRICS_SERVER_TELEMETRY_PATH": "/metrics",
+                "REQUEST_TYPE": "slow"
+              }
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch Program  - Puppeteer fast",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}/src/index.js",
+            "outputCapture": "std",
+            "env": {
+                "IS_TEST": "false",
+                "NODE_ENV": "dev",
+                "LOG_LEVEL": "DEBUG",
+                "PROXY_URL": "http://3.23.35.9:8888",
+                "PROXY_USERNAME": "draupharv",
+                "PROXY_PASSWORD": "r3x8LDRDXbLn85tq",
+                "PUPPETEER_USERNAME": "draup_puppeteer",
+                "PUPPETEER_PASSWORD": "drauppu2pet2er15",
+                "PUPPETEER_CLUSTER_CONCURRENCY_MODEL": "CONTEXT",
+                "PUPPETEER_CLUSTER_MAX_CONCURRENCY": "25",
+                "USE_PROXY": "",
+                "HEADLESS_MODE": "true",
+                "CLUSTER_REQUEST_TIMEOUT": "120000",
+                "MONITOR_MODE": "false",
+                "APP_PORT": "3000",
+                "METRICS_SERVER_PORT": "9100",
+                "WAIT_UNTIL_METHOD": "networkidle2",
+                "METRICS_SERVER_TELEMETRY_PATH": "/metrics",
+                "REQUEST_TYPE": "fast"
+              }
+        }
+    ]
+}
